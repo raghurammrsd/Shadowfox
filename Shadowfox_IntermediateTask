@@ -1,0 +1,37 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.impute import SimpleImputer
+from xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+data = pd.read_csv('your_file_path.csv')
+
+imputer = SimpleImputer(strategy='mean')
+data['LoanAmount'] = imputer.fit_transform(data[['LoanAmount']])
+data['Loan_Amount_Term'] = imputer.fit_transform(data[['Loan_Amount_Term']])
+data['Credit_History'] = imputer.fit_transform(data[['Credit_History']])
+
+for column in ['Gender', 'Married', 'Dependents', 'Education', 'Self_Employed', 'Property_Area', 'Loan_Status']:
+
+    data[column].fillna(data[column].mode()[0], inplace=True)
+    label_encoder = LabelEncoder()
+    data[column] = label_encoder.fit_transform(data[column])
+
+X = data.drop(['Loan_ID', 'Loan_Status'], axis=1)
+y = data['Loan_Status']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+model = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+classification_rep = classification_report(y_test, y_pred)
+
+print(f"Accuracy: {accuracy * 100:.2f}%")
+print("Confusion Matrix:\n", conf_matrix)
+print("Classification Report:\n", classification_rep)
